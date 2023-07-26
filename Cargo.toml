@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 arboard = "3.2.0"
+clap = { version = "4.3.19", features = ["derive"] }
+image = "0.24.6"
+lazy_static = "1.4.0"

@@ -1,13 +1,11 @@
 use std::{borrow::Cow, ops::Range};
 
-use arboard::ImageData;
+use crate::ImageData;
 
-use crate::AsciiImage;
-
-pub fn scale<'a>(image_data: &'a ImageData, end_width: usize, end_height: usize) -> AsciiImage<'a> {
+pub fn scale<'a>(image_data: &'a ImageData, end_width: usize, end_height: usize) -> ImageData<'a> {
     let mut grayscale_data: Vec<u8> = Vec::new();
 
-    for chunk in image_data.bytes.chunks_exact(4) {
+    for chunk in image_data.data.chunks_exact(4) {
         grayscale_data.push(pixel_to_grayscale(chunk));
     }
 
@@ -46,11 +44,11 @@ pub fn scale<'a>(image_data: &'a ImageData, end_width: usize, end_height: usize)
         }
     }
 
-    return AsciiImage {
+    ImageData {
         width: end_width,
         height: end_height,
         data: Cow::from(output_data),
-    };
+    }
 }
 
 fn pixel_to_grayscale(chunk: &[u8]) -> u8 {
@@ -63,7 +61,7 @@ fn pixel_to_grayscale(chunk: &[u8]) -> u8 {
     let average = (red + green + blue) / 3;
 
     // cap value to alpha
-    return average.min(alpha) as u8;
+    average.min(alpha) as u8
 }
 
 fn get_ranges_by_ratio(size: usize, ratio: f32) -> Vec<Range<usize>> {
@@ -77,14 +75,14 @@ fn get_ranges_by_ratio(size: usize, ratio: f32) -> Vec<Range<usize>> {
         ranges.push(previous_counter_int..counter.trunc() as usize);
     }
 
-    return ranges;
+    ranges
 }
 
 #[cfg(test)]
 mod test {
     use std::borrow::Cow;
 
-    use arboard::ImageData;
+    use crate::ImageData;
 
     use crate::scaler::get_ranges_by_ratio;
 
@@ -124,7 +122,7 @@ mod test {
         let image = ImageData {
             width: 0,
             height: 0,
-            bytes: Cow::from(Vec::new()),
+            data: Cow::from(Vec::new()),
         };
         let scaled = scale(&image, 0, 0);
         assert_eq!(0, scaled.width);
@@ -138,7 +136,7 @@ mod test {
         let image = ImageData {
             width: 2,
             height: 2,
-            bytes: Cow::from(bytes),
+            data: Cow::from(bytes),
         };
         let scaled = scale(&image, 2, 2);
         assert_eq!(2, scaled.width);
@@ -152,7 +150,7 @@ mod test {
         let image = ImageData {
             width: 2,
             height: 2,
-            bytes: Cow::from(bytes),
+            data: Cow::from(bytes),
         };
         let expected_bytes: Vec<u8> = Vec::from([1, 5, 9, 13]);
         let scaled = scale(&image, 2, 2);
@@ -167,7 +165,7 @@ mod test {
         let image = ImageData {
             width: 2,
             height: 2,
-            bytes: Cow::from(bytes),
+            data: Cow::from(bytes),
         };
         let expected_bytes: Vec<u8> = Vec::from([0, 0, 0, 0, 1, 5, 0, 9, 13]);
         let scaled = scale(&image, 3, 3);
@@ -186,7 +184,7 @@ mod test {
         let image = ImageData {
             width: 4,
             height: 4,
-            bytes: Cow::from(bytes),
+            data: Cow::from(bytes),
         };
         let expected_bytes: Vec<u8> = Vec::from([1, 5, 11, 17, 21, 27, 42, 46, 52]);
         let scaled = scale(&image, 3, 3);
