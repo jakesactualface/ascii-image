@@ -5,6 +5,11 @@ pub use crate::scaler::scale;
 
 use lazy_static::lazy_static;
 
+pub struct RectSize {
+    pub width: usize,
+    pub height: usize,
+}
+
 pub struct ImageData<'a> {
     pub width: usize,
     pub height: usize,
