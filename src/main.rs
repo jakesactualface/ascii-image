@@ -34,12 +34,11 @@ struct Cli {
 fn main() {
     let args = Cli::parse();
 
-    let image_data;
-    if args.clipboard {
-        image_data = get_clipboard_image();
+    let image_data = if args.clipboard {
+        get_clipboard_image()
     } else {
-        image_data = get_image_from_file(args.file_path.unwrap());
-    }
+        get_image_from_file(args.file_path.unwrap())
+    };
 
     if image_data.is_none() {
         return;
@@ -67,10 +66,7 @@ fn main() {
 }
 
 fn get_terminal_size() -> Option<RectSize> {
-    return match term_size::dimensions() {
-        Some((width, height)) => Some(RectSize { width, height }),
-        None => None,
-    };
+    term_size::dimensions().map(|(width, height)| RectSize { width, height })
 }
 
 fn get_clipboard_image() -> Option<ImageData<'static>> {
@@ -122,11 +118,11 @@ fn get_clipboard_image_from_wsl() -> Option<ImageData<'static>> {
         .decode(child.stdout)
         .expect("Error decoding contents from Windows clipboard");
     let converted_image = image::load_from_memory(decoded.as_ref()).ok().unwrap();
-    return Some(ImageData {
+    Some(ImageData {
         width: converted_image.width() as usize,
         height: converted_image.height() as usize,
         data: Cow::from(converted_image.into_bytes()),
-    });
+    })
 }
 
 fn get_image_from_file(file_path: String) -> Option<ImageData<'static>> {
@@ -137,7 +133,7 @@ fn get_image_from_file(file_path: String) -> Option<ImageData<'static>> {
             return None;
         }
     };
-    return match image {
+    match image {
         Ok(decoded) => Some(ImageData {
             width: decoded.width() as usize,
             height: decoded.height() as usize,
@@ -147,5 +143,5 @@ fn get_image_from_file(file_path: String) -> Option<ImageData<'static>> {
             eprintln!("Error decoding image file contents: {}", e);
             None
         }
-    };
+    }
 }
