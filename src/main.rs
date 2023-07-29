@@ -1,8 +1,9 @@
 use ascii_image::RectSize;
-use std::borrow::Cow;
+use std::{borrow::Cow, process::Command};
 
 use arboard::Clipboard;
 use ascii_image::{scale, ImageData};
+use base64::{engine::general_purpose, Engine as _};
 use clap::Parser;
 use image::io::Reader as ImageReader;
 
@@ -73,6 +74,11 @@ fn get_terminal_size() -> Option<RectSize> {
 }
 
 fn get_clipboard_image() -> Option<ImageData<'static>> {
+    if wsl::is_wsl() {
+        if let Some(windows_image) = get_clipboard_image_from_wsl() {
+            return Some(windows_image);
+        }
+    }
     let mut clipboard = Clipboard::new().unwrap();
     return match clipboard.get_image() {
         Ok(img) => Some(ImageData {
@@ -85,6 +91,42 @@ fn get_clipboard_image() -> Option<ImageData<'static>> {
             None
         }
     };
+}
+
+fn get_clipboard_image_from_wsl() -> Option<ImageData<'static>> {
+    let error_text = "Failed to transfer Windows clipboard image to WSL!";
+    let mut child = Command::new("powershell.exe")
+        .arg("-C")
+        .arg(include_str!("scripts/image_from_clipboard.ps1"))
+        .current_dir(".")
+        .output()
+        .expect(error_text);
+    if !child.status.success() {
+        let error_text = std::str::from_utf8(&child.stderr);
+        eprintln!("{:#?}", error_text);
+        return None;
+    }
+
+    if child.stdout.ends_with(&[13, 10]) {
+        // Remove line endings after output
+        child.stdout.pop();
+        child.stdout.pop();
+    }
+
+    if child.stdout.is_empty() {
+        // No image was found in Windows
+        return None;
+    }
+
+    let decoded = general_purpose::STANDARD
+        .decode(child.stdout)
+        .expect("Error decoding contents from Windows clipboard");
+    let converted_image = image::load_from_memory(decoded.as_ref()).ok().unwrap();
+    return Some(ImageData {
+        width: converted_image.width() as usize,
+        height: converted_image.height() as usize,
+        data: Cow::from(converted_image.into_bytes()),
+    });
 }
 
 fn get_image_from_file(file_path: String) -> Option<ImageData<'static>> {
