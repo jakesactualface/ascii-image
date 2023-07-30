@@ -4,7 +4,7 @@ use std::{borrow::Cow, process::Command};
 use arboard::Clipboard;
 use ascii_image::{scale, ImageData};
 use base64::{engine::general_purpose, Engine as _};
-use clap::Parser;
+use clap::{builder::ArgPredicate, Parser};
 use image::io::Reader as ImageReader;
 
 const DEFAULT_WIDTH: usize = 128;
@@ -19,9 +19,15 @@ enum ScalingBehavior {
 #[derive(Parser, Debug)]
 struct Cli {
     #[clap(short, long, value_parser, conflicts_with("clipboard"))]
-    file_path: Option<String>,
+    filepath: Option<String>,
 
-    #[clap(short, long, value_parser, default_value = "true")]
+    #[clap(
+        short,
+        long,
+        value_parser,
+        default_value = "true",
+        default_value_if("filepath", ArgPredicate::IsPresent, "false")
+    )]
     clipboard: bool,
 
     #[clap(long, value_parser, requires("height"))]
@@ -40,7 +46,7 @@ fn main() {
     let image_data = if args.clipboard {
         get_clipboard_image()
     } else {
-        get_image_from_file(args.file_path.unwrap())
+        get_image_from_file(args.filepath.unwrap())
     };
 
     if image_data.is_none() {
@@ -172,8 +178,8 @@ fn get_clipboard_image_from_wsl() -> Option<ImageData<'static>> {
     })
 }
 
-fn get_image_from_file(file_path: String) -> Option<ImageData<'static>> {
-    let image = match ImageReader::open(file_path) {
+fn get_image_from_file(filepath: String) -> Option<ImageData<'static>> {
+    let image = match ImageReader::open(filepath) {
         Ok(image) => image.decode(),
         Err(e) => {
             eprintln!("Error getting image from file: {}", e);
