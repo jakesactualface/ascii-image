@@ -28,7 +28,7 @@ pub fn scale<'a>(image_data: &'a ImageData, end_size: RectSize) -> ImageData<'a>
                 for j in x_range.clone() {
                     match grayscale_data.get(row_index_padding + j) {
                         Some(&pixel) => pixels_to_average.push(pixel),
-                        None => panic!("Tried accessing outisde of image bounds"),
+                        None => panic!("Tried accessing outisde of image bounds!"),
                     }
                 }
             }

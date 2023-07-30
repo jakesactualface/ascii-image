@@ -150,6 +150,7 @@ fn get_clipboard_image_from_wsl() -> Option<ImageData<'static>> {
         .current_dir(".")
         .output()
         .expect(error_text);
+
     if !child.status.success() {
         let error_text = std::str::from_utf8(&child.stderr);
         eprintln!("{:#?}", error_text);
@@ -171,10 +172,11 @@ fn get_clipboard_image_from_wsl() -> Option<ImageData<'static>> {
         .decode(child.stdout)
         .expect("Error decoding contents from Windows clipboard");
     let converted_image = image::load_from_memory(decoded.as_ref()).ok().unwrap();
+
     Some(ImageData {
         width: converted_image.width() as usize,
         height: converted_image.height() as usize,
-        data: Cow::from(converted_image.into_bytes()),
+        data: Cow::from(converted_image.into_rgba8().into_vec()),
     })
 }
 
