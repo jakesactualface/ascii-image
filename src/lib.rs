@@ -29,7 +29,7 @@ impl fmt::Display for ImageData<'_> {
 }
 
 lazy_static! {
-    static ref CHARACTERS: Vec<char> = r#" `.-':_,^=;><+!rc*/z?sLTv)J7(|Fi{C}fI31tlu[neoZ5Yxjya]2ESwqkP6h9d4VpOGbUAKXHm8RD#$Bg0MNWQ%&@"#.chars().collect();
+    static ref CHARACTERS: Vec<char> = r#" .,:ilwW"#.chars().collect();
 }
 
 fn get_ascii_character(brightness: &u8) -> &'static char {
