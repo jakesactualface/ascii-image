@@ -10,6 +10,12 @@ use image::io::Reader as ImageReader;
 const DEFAULT_WIDTH: usize = 128;
 const DEFAULT_HEIGHT: usize = 64;
 
+#[derive(clap::ValueEnum, Clone, Debug)]
+enum ScalingBehavior {
+    Scale,
+    Stretch,
+}
+
 #[derive(Parser, Debug)]
 struct Cli {
     #[clap(short, long, value_parser, conflicts_with("clipboard"))]
@@ -23,6 +29,9 @@ struct Cli {
 
     #[clap(long, value_parser, requires("width"))]
     height: Option<usize>,
+
+    #[clap(short, long, value_enum, default_value_t=ScalingBehavior::Scale)]
+    scaling: ScalingBehavior,
 }
 
 fn main() {
@@ -40,7 +49,7 @@ fn main() {
 
     let image_data = image_data.unwrap();
 
-    let output_size = match (args.width, args.height) {
+    let mut output_size = match (args.width, args.height) {
         (Some(width), Some(height)) => RectSize { width, height },
         (None, None) => {
             if let Some(terminal_size) = get_terminal_size() {
@@ -55,12 +64,50 @@ fn main() {
         _ => panic!("Width and height must both be set!"),
     };
 
+    if let ScalingBehavior::Scale = args.scaling {
+        output_size = trim_to_aspect_ratio(image_data.width, image_data.height, output_size)
+    }
+
     let scaled_image = scale(&image_data, output_size);
     println!("{}", scaled_image);
 }
 
 fn get_terminal_size() -> Option<RectSize> {
     term_size::dimensions().map(|(width, height)| RectSize { width, height })
+}
+
+fn trim_to_aspect_ratio(
+    start_width: usize,
+    start_height: usize,
+    output_size: RectSize,
+) -> RectSize {
+    let buffer = 5;
+
+    let desired_ratio = start_width as f32 / start_height as f32;
+
+    // Skew ratio to account for text characters not being perfect squares
+    let desired_ratio = desired_ratio * 2.0;
+
+    let target_width = (desired_ratio * (output_size.height as f32).ceil()) as usize;
+    let target_height = (desired_ratio * (output_size.width as f32).ceil()) as usize;
+
+    match (target_width, target_height) {
+        (width, height) if width > output_size.width.saturating_add(buffer) => {
+            // Ratio would cause width to be too high, decrease height to compensate
+            RectSize {
+                width: output_size.width,
+                height,
+            }
+        }
+        (width, height) if height > output_size.height.saturating_add(buffer) => {
+            // Ratio would cause height to be too high, decrease width to compensate
+            RectSize {
+                width,
+                height: output_size.height,
+            }
+        }
+        _ => output_size,
+    }
 }
 
 fn get_clipboard_image() -> Option<ImageData<'static>> {
