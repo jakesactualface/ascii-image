@@ -89,21 +89,27 @@ fn trim_to_aspect_ratio(
     let desired_ratio = desired_ratio * 2.0;
 
     let target_width = (desired_ratio * (output_size.height as f32).ceil()) as usize;
-    let target_height = (desired_ratio * (output_size.width as f32).ceil()) as usize;
+    let target_height = (output_size.width as f32 / desired_ratio).ceil() as usize;
 
     match (target_width, target_height) {
-        (width, height) if width > output_size.width.saturating_add(buffer) => {
+        (width, _height) if width > output_size.width.saturating_add(buffer) => {
             // Ratio would cause width to be too high, decrease height to compensate
-            RectSize {
-                width: output_size.width,
-                height,
-            }
-        }
-        (width, height) if height > output_size.height.saturating_add(buffer) => {
-            // Ratio would cause height to be too high, decrease width to compensate
+            println!(
+                "Decreasing width to maintain aspect ratio. Aspect ratio wanted width: {width}"
+            );
             RectSize {
                 width,
                 height: output_size.height,
+            }
+        }
+        (_width, height) if height > output_size.height.saturating_add(buffer) => {
+            // Ratio would cause height to be too high, decrease width to compensate
+            println!(
+                "Decreasing height to maintain aspect ratio. Aspect ratio wanted height: {height}"
+            );
+            RectSize {
+                width: output_size.width,
+                height,
             }
         }
         _ => output_size,
