@@ -12,16 +12,10 @@ const DEFAULT_HEIGHT: usize = 64;
 
 #[derive(Parser, Debug)]
 struct Cli {
-    #[clap(
-        short,
-        long,
-        value_parser,
-        conflicts_with("clipboard"),
-        required_unless_present("clipboard")
-    )]
+    #[clap(short, long, value_parser, conflicts_with("clipboard"))]
     file_path: Option<String>,
 
-    #[clap(short, long, value_parser, default_value = "false")]
+    #[clap(short, long, value_parser, default_value = "true")]
     clipboard: bool,
 
     #[clap(long, value_parser, requires("height"))]
