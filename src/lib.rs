@@ -34,6 +34,7 @@ lazy_static! {
 
 fn get_ascii_character(brightness: &u8) -> &'static char {
     let interpolated = (*brightness as f32) / (u8::MAX as f32);
-    let index = interpolated * CHARACTERS.len() as f32;
-    return CHARACTERS.get(index as usize).unwrap();
+    let index = interpolated * (CHARACTERS.len() - 1) as f32;
+    let index = index.round() as usize;
+    return CHARACTERS.get(index).unwrap();
 }
