@@ -74,7 +74,11 @@ fn get_ranges_by_ratio(size: usize, ratio: f32) -> Vec<Range<usize>> {
     for _ in 0..size {
         previous_counter_int = counter.trunc() as usize;
         counter += ratio;
-        ranges.push(previous_counter_int..counter.trunc() as usize);
+        let mut range_end = counter.trunc() as usize;
+        if range_end == previous_counter_int {
+            range_end = size.min(range_end.saturating_add(1));
+        }
+        ranges.push(previous_counter_int..range_end);
     }
 
     ranges
@@ -187,7 +191,7 @@ mod test {
             height: 2,
             data: Cow::from(bytes),
         };
-        let expected_bytes: Vec<u8> = Vec::from([0, 0, 0, 0, 1, 5, 0, 9, 13]);
+        let expected_bytes: Vec<u8> = Vec::from([1, 1, 5, 1, 1, 5, 9, 9, 13]);
         let scaled = scale(
             &image,
             RectSize {
