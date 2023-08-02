@@ -38,6 +38,9 @@ struct Cli {
 
     #[clap(short, long, value_enum, default_value_t=ScalingBehavior::Scale)]
     scaling: ScalingBehavior,
+
+    #[clap(short, long, value_parser, default_value = "false")]
+    verbose: bool,
 }
 
 fn main() {
@@ -71,7 +74,12 @@ fn main() {
     };
 
     if let ScalingBehavior::Scale = args.scaling {
-        output_size = trim_to_aspect_ratio(image_data.width, image_data.height, output_size)
+        output_size = trim_to_aspect_ratio(
+            image_data.width,
+            image_data.height,
+            output_size,
+            args.verbose,
+        )
     }
 
     let scaled_image = scale(&image_data, output_size);
@@ -86,6 +94,7 @@ fn trim_to_aspect_ratio(
     start_width: usize,
     start_height: usize,
     output_size: RectSize,
+    verbose: bool,
 ) -> RectSize {
     let buffer = 5;
 
@@ -100,9 +109,11 @@ fn trim_to_aspect_ratio(
     match (target_width, target_height) {
         (width, height) if width > output_size.width.saturating_add(buffer) => {
             // Ratio would cause width to be too high, decrease height to compensate
-            println!(
-                "Decreasing width to maintain aspect ratio. Aspect ratio wanted width: {width}"
-            );
+            if verbose {
+                println!(
+                    "Decreasing width to maintain aspect ratio. Aspect ratio wanted width: {width}"
+                );
+            }
             RectSize {
                 width: output_size.width,
                 height,
@@ -110,9 +121,11 @@ fn trim_to_aspect_ratio(
         }
         (width, height) if height > output_size.height.saturating_add(buffer) => {
             // Ratio would cause height to be too high, decrease width to compensate
-            println!(
-                "Decreasing height to maintain aspect ratio. Aspect ratio wanted height: {height}"
-            );
+            if verbose {
+                println!(
+                    "Decreasing height to maintain aspect ratio. Aspect ratio wanted height: {height}"
+                );
+            }
             RectSize {
                 width,
                 height: output_size.height,
