@@ -1,11 +1,15 @@
 use ascii_image::RectSize;
-use std::{borrow::Cow, process::Command};
+use std::{
+    borrow::Cow,
+    fs::File,
+    io::{BufReader, Read},
+    process::Command,
+};
 
 use arboard::Clipboard;
 use ascii_image::{scale, ImageData};
 use base64::{engine::general_purpose, Engine as _};
 use clap::{builder::ArgPredicate, Parser};
-use image::io::Reader as ImageReader;
 
 const DEFAULT_WIDTH: usize = 128;
 const DEFAULT_HEIGHT: usize = 64;
@@ -194,22 +198,16 @@ fn get_clipboard_image_from_wsl() -> Option<ImageData<'static>> {
 }
 
 fn get_image_from_file(filepath: String) -> Option<ImageData<'static>> {
-    let image = match ImageReader::open(filepath) {
-        Ok(image) => image.decode(),
-        Err(e) => {
-            eprintln!("Error getting image from file: {}", e);
-            return None;
-        }
-    };
-    match image {
-        Ok(decoded) => Some(ImageData {
-            width: decoded.width() as usize,
-            height: decoded.height() as usize,
-            data: Cow::from(decoded.into_bytes()),
-        }),
-        Err(e) => {
-            eprintln!("Error decoding image file contents: {}", e);
-            None
-        }
-    }
+    let file = File::open(filepath).expect("Could not open file");
+    let mut reader = BufReader::new(file);
+    let mut bytes: Vec<u8> = Vec::new();
+    reader
+        .read_to_end(&mut bytes)
+        .expect("Error extracting image bytes");
+    let image = image::load_from_memory(&bytes).expect("Error decoding image file contents");
+    Some(ImageData {
+        width: image.width() as usize,
+        height: image.height() as usize,
+        data: Cow::from(image.into_rgba8().into_vec()),
+    })
 }
